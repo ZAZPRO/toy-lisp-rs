@@ -36,14 +36,7 @@ fn eval_name(s: &String, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, Strin
         return Err("There is no defined name in this environment".to_string());
     }
 
-    let ret_obj = obj.unwrap().clone();
-    // match ret_obj {
-    //     Object::Lambda(_, _) => {
-    //         println!("HERE");
-    //     }
-    //     _ => (),
-    // }
-    Ok(ret_obj)
+    Ok(obj.unwrap().clone())
 }
 
 fn eval_list(l: &Vec<Object>, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
@@ -278,19 +271,10 @@ fn eval_list(l: &Vec<Object>, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, 
                     _ => return Err("Not implemented operator!".to_string()),
                 }
             }
-            // }
-            // _ => return Err("Wrong evaluated operands".to_string()),
-            // }
         }
 
         Object::Name(s) => {
-            let lambda = eval_lambda_call(s, scope, l)?;
-            // if lambda.is_err() {
-            //     eval_name(s, scope)
-            // } else {
-            //     lambda
-            // }
-            Ok(lambda)
+            return eval_lambda_call(s, scope, l);
         }
 
         _ => {
@@ -314,9 +298,6 @@ fn eval_obj(obj: &Object, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, Stri
         Object::Bool(_) => Ok(obj.clone()),
         Object::Integer(n) => Ok(Object::Integer(*n)),
         Object::Float(f) => Ok(Object::Float(*f)),
-        // Object::Operator(o) => eval_operator(o, scope),
-        // Object::Condition => eval_condition(scope),
-        // Object::Keyword(s) => eval_keyword(s, scope),
         Object::Name(s) => eval_name(s, scope),
         Object::List(l) => eval_list(l, scope),
         _ => todo!(),
