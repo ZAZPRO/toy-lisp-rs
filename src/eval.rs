@@ -1,19 +1,34 @@
 use crate::object::Op;
 use crate::{env::Scope, object::Object};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 pub fn eval(parsed_list: Object, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
     eval_obj(&parsed_list, scope)
 }
 
-// fn eval_lambda_call(params: Vec<String>, body: Vec<Object>, scope: &mut Rc<RefCell<Scope>>) {
-//     let mut new_scope = Rc::new(RefCell::new(Scope::extend(scope.clone())));
-//     for p in params {
-        
-//     }
-// }
+fn eval_lambda_call(
+    s: &String,
+    scope: &mut Rc<RefCell<Scope>>,
+    list: &Vec<Object>,
+) -> Result<Object, String> {
+    let lamdba = scope.borrow_mut().get(s);
+    if lamdba.is_some() {
+        match lamdba.unwrap() {
+            Object::Lambda(params, body) => {
+                let mut new_scope = Rc::new(RefCell::new(Scope::extend(scope.clone())));
+                for (i, param) in params.iter().enumerate() {
+                    let obj = eval_obj(&list[1 + i], scope)?;
+                    new_scope.borrow_mut().set(param, obj);
+                }
+                return eval_obj(&Object::List(body), &mut new_scope);
+            }
+            _ => return Err(format!("Unbound symbol: {}", s)),
+        }
+    } else {
+        return Err(format!("Unbound symbol: {}", s));
+    }
+}
 
 fn eval_name(s: &String, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
     let obj = scope.borrow_mut().get(s);
@@ -103,165 +118,179 @@ fn eval_list(l: &Vec<Object>, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, 
         },
 
         Object::Operator(o) => {
-            let operands = Object::List(l[1..].to_vec());
-            let evaluated_operands = eval_obj(&operands, scope)?;
-            match evaluated_operands {
-                Object::List(operands) => {
-                    let first_operand = &operands[0];
-                    if !operands.iter().all(|_o| matches!(first_operand, _o)) {
-                        return Err("Operands are not the same type!".to_string());
-                    } else {
-                        match o {
-                            Op::Add => match first_operand {
-                                Object::Integer(n) => {
-                                    let mut sum: i64 = *n;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Integer(n) => sum += n,
-                                            _ => return Err("How? + Int".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Integer(sum));
-                                }
-                                Object::Float(f) => {
-                                    let mut sum: f64 = *f;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Float(f) => sum += f,
-                                            _ => return Err("How? + Float".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Float(sum));
-                                }
-                                _ => return Err("Not implemented".to_string()),
-                            },
+            let other_operands = l[1..].to_vec();
 
-                            Op::Sub => match first_operand {
-                                Object::Integer(n) => {
-                                    let mut diff: i64 = *n;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Integer(n) => diff -= n,
-                                            _ => return Err("How? - Int".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Integer(diff));
-                                }
-                                Object::Float(f) => {
-                                    let mut diff: f64 = *f;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Float(f) => diff -= f,
-                                            _ => return Err("How? - Float".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Float(diff));
-                                }
-                                _ => return Err("Not implemented".to_string()),
-                            },
-
-                            Op::Div => match first_operand {
-                                Object::Integer(n) => {
-                                    let mut diff: i64 = *n;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Integer(n) => diff /= n,
-                                            _ => return Err("How? / Int".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Integer(diff));
-                                }
-                                Object::Float(f) => {
-                                    let mut diff: f64 = *f;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Float(f) => diff /= f,
-                                            _ => return Err("How? / Float".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Float(diff));
-                                }
-                                _ => return Err("Not implemented".to_string()),
-                            },
-
-                            Op::Mul => match first_operand {
-                                Object::Integer(n) => {
-                                    let mut mult: i64 = *n;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Integer(n) => mult *= n,
-                                            _ => return Err("How? * Int".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Integer(mult));
-                                }
-                                Object::Float(f) => {
-                                    let mut mult: f64 = *f;
-                                    for i in 1..operands.len() {
-                                        match operands[i] {
-                                            Object::Float(f) => mult *= f,
-                                            _ => return Err("How? / Float".to_string()),
-                                        }
-                                    }
-                                    return Ok(Object::Float(mult));
-                                }
-                                _ => return Err("Not implemented".to_string()),
-                            },
-
-                            Op::Eq => {
-                                let mut res = false;
-                                for i in 1..operands.len() {
-                                    if operands[i] != *first_operand {
-                                        return Ok(Object::Bool(false));
-                                    } else {
-                                        res = true;
-                                    }
-                                }
-                                return Ok(Object::Bool(res));
-                            }
-
-                            Op::NotEq => {
-                                let mut res = false;
-                                for i in 1..operands.len() {
-                                    if operands[i] == *first_operand {
-                                        res |= false;
-                                    } else {
-                                        res |= true;
-                                    }
-                                }
-                                return Ok(Object::Bool(res));
-                            }
-
-                            Op::Greater => {
-                                let mut res = false;
-                                for i in 1..operands.len() {
-                                    if *first_operand > operands[i] {
-                                        res = true;
-                                    } else {
-                                        return Ok(Object::Bool(false));
-                                    }
-                                }
-                                return Ok(Object::Bool(res));
-                            }
-
-                            Op::Smaller => {
-                                let mut res = false;
-                                for i in 1..operands.len() {
-                                    if *first_operand < operands[i] {
-                                        res = true;
-                                    } else {
-                                        return Ok(Object::Bool(false));
-                                    }
-                                }
-                                return Ok(Object::Bool(res));
-                            }
-
-                            _ => return Err("Not implemented operator!".to_string()),
-                        }
-                    }
-                }
-                _ => return Err("Wrong evaluated operands".to_string()),
+            let mut operands: Vec<Object> = Vec::new();
+            for o in other_operands {
+                let operand = eval_obj(&o, scope)?;
+                operands.push(operand.clone());
             }
+
+            let first_operand = &operands[0];
+            if !operands.iter().all(|_o| matches!(first_operand, _o)) {
+                return Err("Operands are not the same type!".to_string());
+            } else {
+                match o {
+                    Op::Add => match first_operand {
+                        Object::Integer(n) => {
+                            let mut sum: i64 = *n;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Integer(n) => sum += n,
+                                    _ => return Err("How? + Int".to_string()),
+                                }
+                            }
+                            return Ok(Object::Integer(sum));
+                        }
+                        Object::Float(f) => {
+                            let mut sum: f64 = *f;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Float(f) => sum += f,
+                                    _ => return Err("How? + Float".to_string()),
+                                }
+                            }
+                            return Ok(Object::Float(sum));
+                        }
+                        _ => return Err("Not implemented".to_string()),
+                    },
+
+                    Op::Sub => match first_operand {
+                        Object::Integer(n) => {
+                            let mut diff: i64 = *n;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Integer(n) => diff -= n,
+                                    _ => return Err("How? - Int".to_string()),
+                                }
+                            }
+                            return Ok(Object::Integer(diff));
+                        }
+                        Object::Float(f) => {
+                            let mut diff: f64 = *f;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Float(f) => diff -= f,
+                                    _ => return Err("How? - Float".to_string()),
+                                }
+                            }
+                            return Ok(Object::Float(diff));
+                        }
+                        _ => return Err("Not implemented".to_string()),
+                    },
+
+                    Op::Div => match first_operand {
+                        Object::Integer(n) => {
+                            let mut diff: i64 = *n;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Integer(n) => diff /= n,
+                                    _ => return Err("How? / Int".to_string()),
+                                }
+                            }
+                            return Ok(Object::Integer(diff));
+                        }
+                        Object::Float(f) => {
+                            let mut diff: f64 = *f;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Float(f) => diff /= f,
+                                    _ => return Err("How? / Float".to_string()),
+                                }
+                            }
+                            return Ok(Object::Float(diff));
+                        }
+                        _ => return Err("Not implemented".to_string()),
+                    },
+
+                    Op::Mul => match first_operand {
+                        Object::Integer(n) => {
+                            let mut mult: i64 = *n;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Integer(n) => mult *= n,
+                                    _ => return Err("How? * Int".to_string()),
+                                }
+                            }
+                            return Ok(Object::Integer(mult));
+                        }
+                        Object::Float(f) => {
+                            let mut mult: f64 = *f;
+                            for i in 1..operands.len() {
+                                match operands[i] {
+                                    Object::Float(f) => mult *= f,
+                                    _ => return Err("How? / Float".to_string()),
+                                }
+                            }
+                            return Ok(Object::Float(mult));
+                        }
+                        _ => return Err("Not implemented".to_string()),
+                    },
+
+                    Op::Eq => {
+                        let mut res = false;
+                        for i in 1..operands.len() {
+                            if operands[i] != *first_operand {
+                                return Ok(Object::Bool(false));
+                            } else {
+                                res = true;
+                            }
+                        }
+                        return Ok(Object::Bool(res));
+                    }
+
+                    Op::NotEq => {
+                        let mut res = false;
+                        for i in 1..operands.len() {
+                            if operands[i] == *first_operand {
+                                res |= false;
+                            } else {
+                                res |= true;
+                            }
+                        }
+                        return Ok(Object::Bool(res));
+                    }
+
+                    Op::Greater => {
+                        let mut res = false;
+                        for i in 1..operands.len() {
+                            if *first_operand > operands[i] {
+                                res = true;
+                            } else {
+                                return Ok(Object::Bool(false));
+                            }
+                        }
+                        return Ok(Object::Bool(res));
+                    }
+
+                    Op::Smaller => {
+                        let mut res = false;
+                        for i in 1..operands.len() {
+                            if *first_operand < operands[i] {
+                                res = true;
+                            } else {
+                                return Ok(Object::Bool(false));
+                            }
+                        }
+                        return Ok(Object::Bool(res));
+                    }
+
+                    _ => return Err("Not implemented operator!".to_string()),
+                }
+            }
+            // }
+            // _ => return Err("Wrong evaluated operands".to_string()),
+            // }
+        }
+
+        Object::Name(s) => {
+            let lambda = eval_lambda_call(s, scope, l)?;
+            // if lambda.is_err() {
+            //     eval_name(s, scope)
+            // } else {
+            //     lambda
+            // }
+            Ok(lambda)
         }
 
         _ => {
