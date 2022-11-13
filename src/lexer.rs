@@ -45,7 +45,7 @@ pub enum LexerToken<'a> {
     #[token(")")]
     ParenthesesClose,
 
-    #[regex("def|lambda|print", |lex| lex.slice())]
+    #[regex("def|lambda", |lex| lex.slice())]
     Keyword(&'a str),
 
     #[token("if")]
