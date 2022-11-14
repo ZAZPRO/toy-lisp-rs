@@ -1,5 +1,5 @@
 # Rust Toy Lisp interpreter
-Based on this [book](https://vishpat.github.io/lisp-rs/overview.html) but with distinct differences.
+Based on v0.0.1 of this [book](https://vishpat.github.io/lisp-rs/overview.html) but with distinct differences.
 
 ## Lisp Features
 - Integers
