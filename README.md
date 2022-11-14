@@ -1,5 +1,7 @@
 # Rust Toy Lisp interpreter
-Based on v0.0.1 of this [book](https://vishpat.github.io/lisp-rs/overview.html) but with distinct differences.
+This is a really simple Lisp interpreter, written in Rust. Just for educational purposes. Used to discover how to work with lexing libraries and how to write basic interpreter. Functionality that is done works really solid, but do not expect any new functionality beyond ones that listed in the Features.
+
+Based on v0.0.1 of this [book](https://vishpat.github.io/lisp-rs/overview.html) but with distinct difference in underground structure of lexing and operator evaluation as operators now accept arbitrary number of arguments.
 
 ## Lisp Features
 - Integers
@@ -16,23 +18,18 @@ Based on v0.0.1 of this [book](https://vishpat.github.io/lisp-rs/overview.html) 
 
 ## Installation
 - Clone repository
-- cargo build --release
-- Executable is created at target/release/lisp-rs
+- Run: ```cargo build --release```
+- Executable is created at ```target/release/lisp-rs```
 
 ## Usage
-### REPL
-Just run lisp-rs without arguments.
-
 ```bash
-lisp-rs
-```
+Usage:
+        Start a REPL  lisp-rs
+        Execute file  lisp-rs [FILE_PATH]
 
-### Evaluate a source file
-Just provide a path to a source file as an argument
-
-```bash
-lisp-rs PATH_TO_LISP_SOURCE
+Main options:
+        -h, -?, --help Print this help message and exit
 ```
 
 ## Toy Lisp Examples
-Check lisp-examples folder
+Check [lisp-examples](https://github.com/ZAZPRO/toy-lisp-rs/tree/main/lisp-examples) project directory.
