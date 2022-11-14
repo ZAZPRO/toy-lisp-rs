@@ -25,6 +25,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
+        if args[1] == "-h" || args[1] == "--help" || args[1] == "-?" {
+            println!("lisp-rs. Basic Lisp interpreter.");
+            println!();
+            println!("Usage:");
+            println!("\tStart a REPL  lisp-rs");
+            println!("\tExecute file  lisp-rs [FILE_PATH]");
+            println!();
+            println!("Main options:");
+            println!("\t-h, -?, --help Print this help message and exit");
+            return Ok(());
+        }
+        
         // We have a file path, read it and evaluate it.
         let program_src = fs::read_to_string(args[1].clone())?;
         println!("Program Source:\n{}", program_src);
