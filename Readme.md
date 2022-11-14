@@ -24,14 +24,14 @@ Based on this [book](https://vishpat.github.io/lisp-rs/overview.html) but with d
 Just run lisp-rs without arguments.
 
 ```bash
-    lisp-rs
+lisp-rs
 ```
 
 ### Evaluate a source file
 Just provide a path to a source file as an argument
 
 ```bash
-    lisp-rs PATH_TO_LISP_SOURCE
+lisp-rs PATH_TO_LISP_SOURCE
 ```
 
 ## Toy Lisp Examples
