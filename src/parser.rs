@@ -27,7 +27,7 @@ fn parse_list(lexer_tokens: &mut Vec<LexerToken>) -> Result<Object, ParserError>
     let token = lexer_tokens.pop();
     if token != Some(LexerToken::ParenthesesOpen) {
         return Err(ParserError {
-            err: format!("Expected Parentheses Open '(',but found {:?}\n", token),
+            err: format!("Expected Parentheses Open '(', but found {:?}\n", token),
         });
     }
 

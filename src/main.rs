@@ -1,37 +1,80 @@
-use std::{cell::RefCell, rc::Rc};
+use std::error::Error;
+use std::fs;
+use std::{cell::RefCell, env, rc::Rc};
 
-use crate::env::Scope;
+use crate::scope::Scope;
+use rustyline::error::ReadlineError;
+use rustyline::validate::MatchingBracketValidator;
+use rustyline::{Cmd, Editor, EventHandler, KeyCode, KeyEvent, Modifiers};
+use rustyline_derive::{Completer, Helper, Highlighter, Hinter, Validator};
 
-mod env;
 mod eval;
 mod lexer;
 mod object;
 mod parser;
+mod scope;
 
-fn main() {
-    let srcs = vec![
-        // format!("(+ {} -{} 5 10)", i64::MAX, i64::MAX),
-        // "(- 1000000000.0 1000000000.0 -20.0 5.0)".to_string(),
-        // "(if (< 5 10 10) (#t) (#f))".to_string(),
-        "(
-            (def r 10.0)
-            (def pi 3.1415926535897931)
-            (* pi (* r r))
-          )"
-        .to_string(),
-        "(
-            (def sqr (lambda (r) (* r r))) 
-            (sqr 10)
-        )"
-        .to_string(),
-    ];
-    for src in srcs {
-        let mut lexer_tokens = lexer::lexing(src.as_str());
-        lexer_tokens.reverse();
-        let parsed_objects = parser::parse(&mut lexer_tokens).unwrap();
-        println!("{}", parsed_objects);
-        let mut scope = Rc::new(RefCell::new(Scope::new()));
-        let eval_object = eval::eval(parsed_objects, &mut scope).unwrap();
-        println!("{}", eval_object);
+#[derive(Completer, Helper, Highlighter, Hinter, Validator)]
+struct InputValidator {
+    #[rustyline(Validator)]
+    brackets: MatchingBracketValidator,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut scope = Rc::new(RefCell::new(Scope::new()));
+
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 1 {
+        // We have a file path, read it and evaluate it.
+        let program_src = fs::read_to_string(args[1].clone())?;
+        println!("Program Source: {}", program_src);
+        let res_eval = eval::eval(program_src, &mut scope);
+        match res_eval {
+            Err(s) => println!("Evaluation Error: {}", s),
+            Ok(o) => println!("Evaluation Output:{}", o),
+        }
+    } else {
+        // There is not file path in the arguments meaning we are enabling cli mode.
+        let h = InputValidator {
+            brackets: MatchingBracketValidator::new(),
+        };
+        let mut rl = Editor::new()?;
+        rl.set_helper(Some(h));
+        rl.bind_sequence(
+            KeyEvent(KeyCode::Enter, Modifiers::SHIFT),
+            EventHandler::Simple(Cmd::Newline),
+        );
+        rl.bind_sequence(
+            KeyEvent(KeyCode::Tab, Modifiers::NONE),
+            EventHandler::Simple(Cmd::Insert(1, "  ".to_string())),
+        );
+
+        loop {
+            let readline = rl.readline("> ");
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str());
+                    let res_eval = eval::eval(line, &mut scope);
+                    match res_eval {
+                        Err(s) => println!("Evaluation error: {}", s),
+                        Ok(o) => println!("{}", o),
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("Got Interrupt Signal Ctrl-C. Exiting...");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("Got Interrupt Signal Ctrl-D. Exiting...");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
+            }
+        }
     }
+
+    Ok(())
 }

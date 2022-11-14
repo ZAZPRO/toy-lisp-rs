@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 logos = {version = "0.12.1", features = ["export_derive"]}
+rustyline = "10.0.0"
+rustyline-derive = "0.7.0"

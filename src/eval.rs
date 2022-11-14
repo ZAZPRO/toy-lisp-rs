@@ -1,11 +1,8 @@
 use crate::object::Op;
-use crate::{env::Scope, object::Object};
+use crate::{lexer, parser};
+use crate::{object::Object, scope::Scope};
 use std::cell::RefCell;
 use std::rc::Rc;
-
-pub fn eval(parsed_list: Object, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
-    eval_obj(&parsed_list, scope)
-}
 
 fn eval_lambda_call(
     s: &String,
@@ -40,6 +37,9 @@ fn eval_name(s: &String, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, Strin
 }
 
 fn eval_list(l: &Vec<Object>, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
+    if l.len() < 1 {
+        return Err("Invalid List\n".to_string());
+    }
     let head = &l[0];
     match head {
         Object::Condition => {
@@ -266,9 +266,7 @@ fn eval_list(l: &Vec<Object>, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, 
                             }
                         }
                         return Ok(Object::Bool(res));
-                    }
-
-                    _ => return Err("Not implemented operator!".to_string()),
+                    } // _ => return Err("Not implemented operator!".to_string()),
                 }
             }
         }
@@ -302,4 +300,14 @@ fn eval_obj(obj: &Object, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, Stri
         Object::List(l) => eval_list(l, scope),
         _ => todo!(),
     }
+}
+
+pub fn eval(string: String, scope: &mut Rc<RefCell<Scope>>) -> Result<Object, String> {
+    let mut lexer_tokens = lexer::lexing(&string);
+    lexer_tokens.reverse();
+    let parsed_objects = match parser::parse(&mut lexer_tokens) {
+        Err(s) => return Err(s.to_string()),
+        Ok(o) => o,
+    };
+    eval_obj(&parsed_objects, scope)
 }
