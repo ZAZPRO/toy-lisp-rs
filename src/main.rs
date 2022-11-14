@@ -27,11 +27,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     if args.len() > 1 {
         // We have a file path, read it and evaluate it.
         let program_src = fs::read_to_string(args[1].clone())?;
-        println!("Program Source: {}", program_src);
+        println!("Program Source:\n{}", program_src);
         let res_eval = eval::eval(program_src, &mut scope);
         match res_eval {
             Err(s) => println!("Evaluation Error: {}", s),
-            Ok(o) => println!("Evaluation Output:{}", o),
+            Ok(o) => println!("Evaluation Output: {}", o),
         }
     } else {
         // There is not file path in the arguments meaning we are enabling cli mode.
