@@ -17,6 +17,9 @@ Based on v0.0.1 of this [book](https://vishpat.github.io/lisp-rs/overview.html) 
 - File Evaluation
 
 ## Installation
+Download latest release on Github for your target platform.
+
+## Building
 - Clone repository
 - Run: ```cargo build --release```
 - Executable is created at ```target/release/lisp-rs```
